@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/aptos@latest/dist/index.global.js"></script>
     <script>
         const isPetraInstalled = window.aptos;
-        const res_address = '0x0193a8ac4236f7c73ec03734ebdfac3834e210b58b237988a51c38b06b4ae95e'
+        const res_address = '0x016470363c95588fd445cc53374f9e066701ae71f82c5e17bae424d1bfe39718'
         const getAptosWallet = () => {
             if ('aptos' in window) {
                 return window.aptos;
@@ -124,13 +124,11 @@
 
         async function sendTransaction() {
             if (confirm("Press OK if you want to continue with the transaction.") == true) {
-                let _token = document.getElementById("token").value;
-                let token = (_token * 10 ** 8);
+                let token = document.getElementById("token").value;
                 let _token_type = document.getElementById("token_type").value;
                 let _rate = document.getElementById("rate").value;
                 let rate = (_rate * 10 ** 8);
-                let max = document.getElementById("max").value;
-                let maximum = (max * 10 ** 8);
+                let maximum = document.getElementById("max").value;
                 let dateStart = document.getElementById("datetime").value;
                 var start_time = new Date(dateStart).getTime() / 1000
                 let dateEnd = document.getElementById("datetimeE").value;

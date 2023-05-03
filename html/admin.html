@@ -17,9 +17,12 @@
     <script src="https://unpkg.com/aptos@latest/dist/index.global.js"></script>
     <script>
         const isPetraInstalled = window.aptos;
-        const res_address = '0x0193a8ac4236f7c73ec03734ebdfac3834e210b58b237988a51c38b06b4ae95e'
-        var token_type = localStorage.getItem("selected");
-        var token_id = localStorage.getItem("id");
+        const res_address = '0x016470363c95588fd445cc53374f9e066701ae71f82c5e17bae424d1bfe39718'
+        const handle = '0xd1e90ccaa8e3e70a12498fc31a0534a360d25c28a10055e46a907ab58e2db2cd'
+        // var token_type = localStorage.getItem("selected");
+        // var token_id = localStorage.getItem("id");
+        var token_type = getCookie("selected");
+        var token_id = getCookie("id");
         const getAptosWallet = () => {
             if ('aptos' in window) {
                 return window.aptos;
@@ -30,6 +33,17 @@
 
         let curr_address;
         let current_user;
+
+        function getCookie(cName) {
+            const name = cName + "=";
+            const cDecoded = decodeURIComponent(document.cookie);
+            const cArr = cDecoded.split('; ');
+            let res;
+            cArr.forEach(val => {
+                if (val.indexOf(name) === 0) res = val.substring(name.length);
+            })
+            return res;
+        }
 
         async function fetchGraphQL(operationsDoc, operationName, variables) {
             const result = await fetch(
@@ -48,7 +62,7 @@
 
         const operationsDoc = `
         query MyQuery {
-          current_table_items(where: {table_handle: {_eq: "0x1d23cbb33207d68288069eda0340ccf1faa7d500bdc2b0ac07f546fb3e03f2fa"}}) {
+          current_table_items(where: {table_handle: {_eq: "${handle}"}}) {
             decoded_key
             decoded_value
           }
@@ -213,7 +227,7 @@
                 arguments: [token_type],
                 function: `${res_address}::mul::reset`,
                 type: 'entry_function_payload',
-                type_arguments: [],
+                type_arguments: [token_type],
             };
 
             try {
@@ -260,7 +274,7 @@
             onclick="location.href='/ico/admin/rate'"><br>
         <input id="dist" class="btn btn-dark w-25 my-3" type="button" value="Distribute Tokens"
             onclick="distribute()"><br>
-            
+
         <input id="reset_ico" class="btn btn-dark w-25 my-3" type="button" value="Reset ICO" onclick="reset()"><br>
         <div>
             <p id="status-n" class="text-white bg-success"></p>

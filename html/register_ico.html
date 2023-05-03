@@ -17,8 +17,8 @@
     <script src="https://unpkg.com/aptos@latest/dist/index.global.js"></script>
     <script>
         const isPetraInstalled = window.aptos;
-        const res_address = '0x0193a8ac4236f7c73ec03734ebdfac3834e210b58b237988a51c38b06b4ae95e'
-        const handle = "0x1d23cbb33207d68288069eda0340ccf1faa7d500bdc2b0ac07f546fb3e03f2fa";
+        const res_address = '0x016470363c95588fd445cc53374f9e066701ae71f82c5e17bae424d1bfe39718'
+        const handle = "0xd1e90ccaa8e3e70a12498fc31a0534a360d25c28a10055e46a907ab58e2db2cd";
         const getAptosWallet = () => {
             if ('aptos' in window) {
                 return window.aptos;
@@ -123,8 +123,16 @@
             // var select = document.getElementById("select-ico").selectedIndex;
             var text = select.options[select.selectedIndex].text;
             console.log(text);
-            localStorage.setItem("selected", text);
+            setCookie("selected", text,1);
+            // localStorage.setItem("selected", text);
             location.href='/ico'
+        }
+
+        function setCookie(cName, cValue, expDays) {
+            let date = new Date();
+            date.setTime(date.getTime() + (expDays * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + date.toUTCString();
+            document.cookie = cName + "=" + cValue + "; " + expires + "; path=/";
         }
 
         async function connectWallet() {
