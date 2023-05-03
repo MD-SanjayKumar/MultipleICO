@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/aptos@latest/dist/index.global.js"></script>
     <script>
         const isPetraInstalled = window.aptos;
-        const res_address = '0x016470363c95588fd445cc53374f9e066701ae71f82c5e17bae424d1bfe39718'
+        const res_address = '0x2e0deca17b6a947ffcb61d5d0d3e28c14b6312a19e9b1b4938ee49d45b8f7063'
         const getAptosWallet = () => {
             if ('aptos' in window) {
                 return window.aptos;
@@ -183,30 +183,30 @@
         <div class="form-group">
             <label for="token_type" class="form-label">Enter token address</label>
             <input type="text" name="token_type" id="token_type" placeholder="Enter token type"
-                class="form-control w-25" required>
+                class="form-control w-50" required>
         </div>
         <div class="form-group">
             <label for="token" class="form-label">Number of tokens</label>
-            <input type="text" name="token" id="token" placeholder="Enter number of tokens" class="form-control w-25"
+            <input type="text" name="token" id="token" placeholder="Enter number of tokens" class="form-control w-50"
                 required>
         </div>
         <div class="form-group">
             <label for="datetime" class="form-label">Start datetime</label>
-            <input type="datetime-local" id="datetime" name="datetime" class="form-control w-25" required>
+            <input type="datetime-local" id="datetime" name="datetime" class="form-control w-50" required>
         </div>
         <div class="form-group">
             <label for="datetimeE" class="form-label">End datetime</label>
-            <input type="datetime-local" id="datetimeE" name="datetimeE" class="form-control w-25" required>
+            <input type="datetime-local" id="datetimeE" name="datetimeE" class="form-control w-50" required>
         </div>
         <div class="form-group">
             <label for="rate" class="form-label">Rate per token (APT)</label>
-            <input type="text" name="rate" id="rate" placeholder="Enter rate per token(APT)" class="form-control w-25"
+            <input type="text" name="rate" id="rate" placeholder="Enter rate per token(APT)" class="form-control w-50"
                 required>
         </div>
         <div class="form-group">
             <label for="rate" class="form-label">Max. token per person</label>
             <input type="text" name="max" id="max" placeholder="Enter number of token per person"
-                class="form-control w-25" required>
+                class="form-control w-50" required>
         </div><br>
         <input class="btn btn-dark mx-auto" type="button" value="Create ICO" onclick="sendTransaction()"><input
             class="btn btn-outline-dark mx-auto" type="button" value="ADMIN" id="admin"
