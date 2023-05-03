@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        p {
+            background-color: rgb(16, 70, 16);
+            color: white;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aptos@latest/dist/index.global.js"></script>
+    <script>
+        const isPetraInstalled = window.aptos;
+        const res_address = '0x0193a8ac4236f7c73ec03734ebdfac3834e210b58b237988a51c38b06b4ae95e'
+        var token_type = localStorage.getItem("selected");
+        var token_id = localStorage.getItem("id");
+        const getAptosWallet = () => {
+            if ('aptos' in window) {
+                return window.aptos;
+            } else {
+                window.open('https://petra.app/', `_blank`);
+            }
+        };
+
+        let curr_address;
+        let current_user;
+
+        async function fetchGraphQL(operationsDoc, operationName, variables) {
+            const result = await fetch(
+                "https://indexer-testnet.staging.gcp.aptosdev.com/v1/graphql",
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        query: operationsDoc,
+                        variables: variables,
+                        operationName: operationName
+                    })
+                }
+            );
+            return await result.json();
+        }
+
+        const operationsDoc = `
+        query MyQuery {
+          current_table_items(where: {table_handle: {_eq: "0x1d23cbb33207d68288069eda0340ccf1faa7d500bdc2b0ac07f546fb3e03f2fa"}}) {
+            decoded_key
+            decoded_value
+          }
+        }
+      `;
+
+        function fetchMyQuery() {
+            return fetchGraphQL(
+                operationsDoc,
+                "MyQuery",
+                {}
+            );
+        }
+
+        async function initial() {
+            console.log(token_id);
+            document.getElementById("dist").style.visibility = "hidden";
+            document.getElementById("dt").style.visibility = "hidden";
+            document.getElementById("endt").style.visibility = "hidden";
+            document.getElementById("change").style.visibility = "hidden";
+            document.getElementById("fr").style.visibility = "hidden";
+            document.getElementById("reset_ico").style.visibility = "hidden";
+            let connectionStatus = await window.aptos.isConnected();
+            if (connectionStatus == true) {
+                let user = await window.aptos.account();
+                current_user = user.address;
+                document.getElementById("setAddr").innerHTML = `Connected to ${user.address}`;
+            }
+
+            window.aptos.onAccountChange((newAccount) => {
+                if (newAccount) {
+                    currentAccount = newAccount;
+                } else {
+                    currentAccount = window.aptos.connect();
+                }
+            });
+            var d = new Date().toLocaleString();
+            var e = new Date(d).getTime() / 1000
+            console.log(e);
+
+            var admin;
+            var res_type = `${res_address}::mul::ResourceInfo`;
+            const RES_URL = `https://fullnode.testnet.aptoslabs.com/v1/accounts/${res_address}/resource/${res_type}`;
+            await fetch(RES_URL)
+                .then(response => { return response.json() })
+                .then(data => {
+                    admin = data.data.source_addr;
+                    console.log(admin);
+                })
+                .catch(err => {
+                    alert("NO RESOURCE FOUND");
+                    console.log(err)
+                });
+            if (current_user == admin) {
+                var resource_type = '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>';
+                const APT = `https://fullnode.testnet.aptoslabs.com/v1/accounts/${res_address}/resource/${resource_type}`;
+                await fetch(APT)
+                    .then(response => { return response.json() })
+                    .then(data => {
+                        console.log(data.data);
+                        document.getElementById("apt").innerHTML = `Raised Fund: ${(data.data.coin.value) / 10 ** 8}APT`;
+                    })
+                    .catch(err => {
+                        console.log(err)
+                    });
+
+                const { errors, data } = await fetchMyQuery();
+                if (errors) {
+                    // handle those errors like a pro
+                    console.error(errors);
+                }
+                var token_data = data.current_table_items[token_id].decoded_value;
+                // do something great with this precious data
+                if (token_data.start_time == 0 && token_data.end_time == 0) {
+                    document.getElementById("status-n").innerHTML = `STATUS: ICO not created`;
+                }
+                else if (e < token_data.start_time) {
+                    document.getElementById("status-n").innerHTML = `STATUS: ICO not started yet`;
+                    document.getElementById("change").style.visibility = "visible";
+                    document.getElementById("dt").style.visibility = "visible";
+                    document.getElementById("endt").style.visibility = "visible";
+                }
+                else if (e > token_data.end_time) {
+                    document.getElementById("status-e").innerHTML = `STATUS: ICO ended`;
+                    document.getElementById("dist").style.visibility = "visible";
+                    document.getElementById("reset_ico").style.visibility = "visible";
+                }
+                else if (e >= token_data.start_time && e <= token_data.end_time) {
+                    document.getElementById("status-r").innerHTML = `STATUS: ICO running`;
+                    document.getElementById("change").style.visibility = "visible";
+                    document.getElementById("dt").style.visibility = "visible";
+                    document.getElementById("endt").style.visibility = "visible";
+                    document.getElementById("fr").style.visibility = "visible";
+                }
+                console.log(data.current_table_items[token_id].decoded_value);
+
+            } else {
+                console.log("NOT ADMIN");
+            }
+        }
+
+        async function disconnectWallet() {
+            const wallet = getAptosWallet();
+            let connectionStatus = await window.aptos.isConnected();
+            if (connectionStatus == true) {
+                try {
+                    const response = await wallet.disconnect();
+                    if (response == undefined) {
+                        alert(`Disconnected Successfully.`);
+                        document.getElementById("setAddr").innerHTML = "";
+                    }
+                    console.log(response);
+
+                    // event listener for disconnecting
+                    window.aptos.onDisconnect(() => {
+                        connectionStatus = false;
+                    });
+                    window.location.reload()
+                } catch (error) {
+                    if (error.code = 4001) {
+                        alert(`Wallet Not Connected. (${error.name})`);
+                    }
+                    console.log(error);
+                    // { code: 4001, message: "User rejected the request."}
+                }
+            } else {
+                alert(`Wallet Not Connected.`);
+            }
+        }
+
+        async function distribute() {
+            var txnHash;
+            const wallet = getAptosWallet();
+
+            const transaction = {
+                arguments: [token_type],
+                function: `${res_address}::mul::distribute_tokens`,
+                type: 'entry_function_payload',
+                type_arguments: [token_type],
+            };
+
+            try {
+                const pendingTransaction = await window.aptos.signAndSubmitTransaction(transaction);
+                const client = new aptosSDK.AptosClient('https://fullnode.testnet.aptoslabs.com');
+                const txn = await client.waitForTransactionWithResult(
+                    pendingTransaction.hash
+                );
+                txnHash = txn.hash;
+                console.log(txn);
+                document.getElementById("setVal").innerHTML = `Transaction Hash : <a href="https://explorer.aptoslabs.com/txn/${txnHash}" target="_blank">${txnHash}`;
+            } catch (error) {
+                console.log(error);
+                alert(error.name);
+            }
+        }
+
+        async function reset() {
+            var txnHash;
+            const wallet = getAptosWallet();
+
+            const transaction = {
+                arguments: [token_type],
+                function: `${res_address}::mul::reset`,
+                type: 'entry_function_payload',
+                type_arguments: [],
+            };
+
+            try {
+                const pendingTransaction = await window.aptos.signAndSubmitTransaction(transaction);
+                const client = new aptosSDK.AptosClient('https://fullnode.testnet.aptoslabs.com');
+                const txn = await client.waitForTransactionWithResult(
+                    pendingTransaction.hash
+                );
+                txnHash = txn.hash;
+                console.log(txn);
+                document.getElementById("setVal").innerHTML = `Transaction Hash : <a href="https://explorer.aptoslabs.com/txn/${txnHash}" target="_blank">${txnHash}`;
+            } catch (error) {
+                console.log(error);
+                alert(error.name);
+            }
+        }
+
+
+    </script>
+</head>
+
+<body onload="initial()">
+    <div class="container-fluid my-3">
+        <a class="link-dark text-decoration-none" href="http://localhost:6767/" onclick="window.location.reload()">
+            <h4 class="h4 mb-2 display-6">ICO (Initial Coin Offering)</h4>
+        </a>
+        <div class="text-end mb-4">
+            <input type="button" class="btn btn-outline-danger btn-rounded btn-floating" onclick="disconnectWallet()"
+                value="Disconnect" />
+        </div>
+        <p id="setAddr"></p>
+        <div class="text-end mb-4">
+            <p id="apt" class="text-dark bg-light"></p>
+        </div>
+        <input id="ch_admin" class="btn btn-dark w-25 my-3" type="button" value="Change Admin"
+            onclick="location.href='/ico/admin/change'"><br>
+        <input id="dt" class="btn btn-dark w-25 my-3" type="button" value="Change Start Datetime"
+            onclick="location.href='/ico/admin/start'"><br>
+        <input id="endt" class="btn btn-dark w-25 my-3" type="button" value="Change End Datetime"
+            onclick="location.href='/ico/admin/end'"><br>
+        <input id="fr" class="btn btn-dark w-25 my-3" type="button" value="Restrict ICO"
+            onclick="location.href='/ico/admin/freeze'"><br>
+        <input id="change" class="btn btn-dark w-25 my-3" type="button" value="Change Rate"
+            onclick="location.href='/ico/admin/rate'"><br>
+        <input id="dist" class="btn btn-dark w-25 my-3" type="button" value="Distribute Tokens"
+            onclick="distribute()"><br>
+            
+        <input id="reset_ico" class="btn btn-dark w-25 my-3" type="button" value="Reset ICO" onclick="reset()"><br>
+        <div>
+            <p id="status-n" class="text-white bg-success"></p>
+            <p id="status-r" class="text-white bg-info"></p>
+            <p id="status-e" class="text-white bg-danger"></p>
+        </div>
+        <p id="setVal" class="text-white bg-info"></p>
+    </div>
+</body>
+
+</html>

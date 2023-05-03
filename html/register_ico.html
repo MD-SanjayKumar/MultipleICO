@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        p {
+            background-color: rgb(16, 70, 16);
+            color: white;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aptos@latest/dist/index.global.js"></script>
+    <script>
+        const isPetraInstalled = window.aptos;
+        const res_address = '0x0193a8ac4236f7c73ec03734ebdfac3834e210b58b237988a51c38b06b4ae95e'
+        const handle = "0x1d23cbb33207d68288069eda0340ccf1faa7d500bdc2b0ac07f546fb3e03f2fa";
+        const getAptosWallet = () => {
+            if ('aptos' in window) {
+                return window.aptos;
+            } else {
+                window.open('https://petra.app/', `_blank`);
+            }
+        };
+
+        let curr_address;
+
+        async function fetchGraphQL(operationsDoc, operationName, variables) {
+            const result = await fetch(
+                "https://indexer-testnet.staging.gcp.aptosdev.com/v1/graphql",
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        query: operationsDoc,
+                        variables: variables,
+                        operationName: operationName
+                    })
+                }
+            );
+            return await result.json();
+        }
+
+        const operationsDoc = `
+        query MyQuery {
+          current_table_items(where: {table_handle: {_eq: "${handle}"}}) {
+            decoded_key
+            decoded_value
+          }
+        }
+      `;
+
+        function fetchMyQuery() {
+            return fetchGraphQL(
+                operationsDoc,
+                "MyQuery",
+                {}
+            );
+        }
+
+        async function initial() {
+            let connectionStatus = await window.aptos.isConnected();
+            if (connectionStatus == true) {
+                let user = await window.aptos.account();
+                document.getElementById("setAddr").innerHTML = `Connected to ${user.address}`;
+            }
+
+            window.aptos.onAccountChange((newAccount) => {
+                if (newAccount) {
+                    currentAccount = newAccount;
+                } else {
+                    currentAccount = window.aptos.connect();
+                }
+            });
+
+            if (connectionStatus == true) {
+                var d = new Date().toLocaleString();
+                var e = new Date(d).getTime() / 1000
+                const { errors, data } = await fetchMyQuery();
+                if (errors) {
+                    // handle those errors like a pro
+                    console.error(errors);
+                }
+
+                var select = document.getElementById("select-ico");
+                for (i = 0, n = data.current_table_items.length; i < n; i++) {
+                    console.log(i);
+                    console.log(data.current_table_items[i].decoded_key);
+                    var a = document.createElement('a');
+                    var link = document.createTextNode(`${data.current_table_items[i].decoded_key}`);
+                    a.appendChild(link);
+                    if (data.current_table_items[i].decoded_value != null) {
+                        select.options[select.options.length] = new Option(data.current_table_items[i].decoded_key, i);
+                        document.body.appendChild(a);
+                    }
+                    a.href = ``;
+                    var line = document.createElement("p");
+                    line.className = 'line';
+                    if (data.current_table_items[i].decoded_value != null) {
+                        if (e >= data.current_table_items[i].decoded_value.start_time && e <= data.current_table_items[i].decoded_value.end_time) {
+                            line.innerHTML = `Status: Running`;
+                        }
+                        if (e < data.current_table_items[i].decoded_value.start_time) {
+                            line.innerHTML = `Status: Not Started`;
+                        }
+                        if (e > data.current_table_items[i].decoded_value.end_time) {
+                            line.innerHTML = `Status: Ended`;
+                        }
+                        document.body.appendChild(line);
+                    }
+                }
+                // console.log(data.current_table_items.length);
+                // console.log(data.current_table_items[0].decoded_value);
+
+            }
+        }
+
+        function myFunction() {
+            var select = document.getElementById("select-ico");
+            // var select = document.getElementById("select-ico").selectedIndex;
+            var text = select.options[select.selectedIndex].text;
+            console.log(text);
+            localStorage.setItem("selected", text);
+            location.href='/ico'
+        }
+
+        async function connectWallet() {
+            const wallet = getAptosWallet();
+            let connectionStatus = await window.aptos.isConnected();
+            if (connectionStatus == false) {
+                try {
+                    const response = await wallet.connect();
+                    console.log(response);
+
+                    const account = await wallet.account();
+                    console.log(account);
+                    console.log(account.address);
+                    curr_address = account.address;
+                    document.getElementById("setAddr").innerHTML = `Connected to ${account.address}`;
+
+                    // Current network
+                    let network = await window.aptos.network();
+                    console.log(network);
+                } catch (error) {
+                    console.log(error);
+                }
+            } else {
+                alert(`Wallet Already Connected.`);
+            }
+        }
+
+        async function disconnectWallet() {
+            const wallet = getAptosWallet();
+            let connectionStatus = await window.aptos.isConnected();
+            if (connectionStatus == true) {
+                try {
+                    const response = await wallet.disconnect();
+                    if (response == undefined) {
+                        alert(`Disconnected Successfully.`);
+                        document.getElementById("setAddr").innerHTML = "";
+                    }
+                    console.log(response);
+
+                    // event listener for disconnecting
+                    window.aptos.onDisconnect(() => {
+                        connectionStatus = false;
+                    });
+                    window.location.reload()
+                } catch (error) {
+                    if (error.code = 4001) {
+                        alert(`Wallet Not Connected. (${error.name})`);
+                    }
+                    console.log(error);
+                    // { code: 4001, message: "User rejected the request."}
+                }
+            } else {
+                alert(`Wallet Not Connected.`);
+            }
+        }
+    </script>
+</head>
+
+<body onload="initial()">
+    <div class="container-fluid my-3">
+        <a class="link-dark text-decoration-none" href="http://localhost:6767/" onclick="window.location.reload()">
+            <h4 class="h4 mb-2 display-6">ICO (Initial Coin Offering)</h4>
+        </a>
+        <div class="text-end mb-4">
+            <input type="button" class="btn btn-outline-success btn-rounded btn-floating" onclick="connectWallet()"
+                value="Connect" />
+            <input type="button" class="btn btn-outline-danger btn-rounded btn-floating" onclick="disconnectWallet()"
+                value="Disconnect" />
+        </div>
+        <p id="setAddr"></p><br>
+        <div>
+            <h6 class="h4 mb-2 display-6">Available ICO's</h6>
+        </div>
+        <select class="form-select" aria-label="Default select example" id="select-ico"></select>
+        <button class="btn btn-dark mx-auto" onclick="myFunction()">Select ICO</button>
+        <p id="setVal"></p>
+    </div>
+</body>
+
+</html>
