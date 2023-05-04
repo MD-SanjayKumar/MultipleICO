@@ -146,8 +146,7 @@
         }
 
         async function sendTransaction() {
-            let _token = document.getElementById("token").value;
-            let token = (_token * 10 ** 8);
+            let token = document.getElementById("token").value;
             console.log(token);
             var txnHash;
             const wallet = getAptosWallet();
